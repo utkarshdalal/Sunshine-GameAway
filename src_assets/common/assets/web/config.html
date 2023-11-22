@@ -228,6 +228,19 @@
           resolutions and fps are supported.<br>
           This setting does <b>not</b> change how the screen stream is sent to Moonlight
         </div>
+        <div class="mb-3">
+          <label for="max_bitrate" class="form-label">Max Bitrate</label>
+          <input
+            type="number"
+            class="form-control"
+            id="max_bitrate"
+            placeholder="5000"
+            v-model="config.max_bitrate"
+          />
+          <div class="form-text">
+            Maximum bitrate for streaming in Kbps. If not specified, the default bitrate is used
+          </div>
+        </div>
       </div>
       <!-- Mapping Key AltRight to Key Windows -->
       <div class="mb-3">
@@ -1164,10 +1177,12 @@
     "encoder": "",
     "fps": "[10,30,60,90,120]",
     "gamepad": "auto",
+    "global_prep_cmd": "[]",
     "hevc_mode": 0,
     "av1_mode": 0,
     "key_rightalt_to_key_win": "disabled",
     "keyboard": "enabled",
+    "max_bitrate": 0,
     "min_log_level": 2,
     "mouse": "enabled",
     "nvenc_h264_cavlc": "disabled",
@@ -1184,7 +1199,6 @@
     "vt_coder": "auto",
     "vt_realtime": "enabled",
     "vt_software": "auto",
-    "global_prep_cmd": "[]",
   }
 
   new Vue({

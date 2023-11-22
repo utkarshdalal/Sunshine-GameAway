@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.21.1] - 2023-11-22
+**Added**
+- (UI) New internal version just for building
+
 ## [0.21.0] - 2023-10-15
 **Added**
 - (Input) Add support for automatically selecting the emulated controller type based on the physical controller connected to the client
