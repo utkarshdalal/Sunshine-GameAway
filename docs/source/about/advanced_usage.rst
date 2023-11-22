@@ -152,6 +152,23 @@ gamepad
    .. code-block:: text
 
       gamepad = auto
+      
+ds4_back_as_touchpad_click
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Description**
+   .. Hint:: Only applies when gamepad is set to ds4 manually. Unused in other gamepad modes. 
+
+   Allow Select/Back inputs to also trigger DS4 touchpad click. Useful for clients looking to emulate touchpad click
+   on Xinput devices.
+
+**Default**
+   ``enabled``
+
+**Example**
+   .. code-block:: text
+
+      ds4_back_as_touchpad_click = enabled
 
 back_button_timeout
 ^^^^^^^^^^^^^^^^^^^
@@ -226,7 +243,7 @@ keybindings
 **Description**
    Sometimes it may be useful to map keybindings. Wayland won't allow clients to capture the Win Key for example.
 
-   .. Tip:: See `virtual key codes <https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>`_
+   .. Tip:: See `virtual key codes <https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>`__
 
    .. Hint:: keybindings needs to have a multiple of two elements.
 
@@ -473,8 +490,8 @@ audio_sink
 
       **macOS**
          Sunshine can only access microphones on macOS due to system limitations. To stream system audio use
-         `Soundflower <https://github.com/mattingalls/Soundflower>`_ or
-         `BlackHole <https://github.com/ExistentialAudio/BlackHole>`_.
+         `Soundflower <https://github.com/mattingalls/Soundflower>`__ or
+         `BlackHole <https://github.com/ExistentialAudio/BlackHole>`__.
 
       **Windows**
          .. code-block:: batch
@@ -520,7 +537,7 @@ virtual_sink
         - Steam must be installed.
         - Enable `install_steam_audio_drivers`_ or use Steam Remote Play at least once to install the drivers.
 
-      - `Virtual Audio Cable <https://vb-audio.com/Cable/>`_ (macOS, Windows)
+      - `Virtual Audio Cable <https://vb-audio.com/Cable/>`__ (macOS, Windows)
 
 **Example**
    .. code-block:: text
@@ -587,6 +604,9 @@ port
 **Default**
    ``47989``
 
+**Range**
+   ``1029-65514``
+
 **Example**
    .. code-block:: text
 
@@ -643,33 +663,6 @@ cert
    .. code-block:: text
 
       cert = /dir/cert.pem
-
-origin_pin_allowed
-^^^^^^^^^^^^^^^^^^
-
-**Description**
-   The origin of the remote endpoint address that is not denied for HTTP method /pin.
-
-**Choices**
-
-.. table::
-   :widths: auto
-
-   =====     ===========
-   Value     Description
-   =====     ===========
-   pc        Only localhost may access /pin
-   lan       Only LAN devices may access /pin
-   wan       Anyone may access /pin
-   =====     ===========
-
-**Default**
-   ``pc``
-
-**Example**
-   .. code-block:: text
-
-      origin_pin_allowed = pc
 
 origin_web_ui_allowed
 ^^^^^^^^^^^^^^^^^^^^^
@@ -897,14 +890,14 @@ capture
    =========  ===========
    nvfbc      Use NVIDIA Frame Buffer Capture to capture direct to GPU memory. This is usually the fastest method for
               NVIDIA cards. For GeForce cards it will only work with drivers patched with
-              `nvidia-patch <https://github.com/keylase/nvidia-patch/>`_
-              or `nvlax <https://github.com/illnyang/nvlax/>`_.
+              `nvidia-patch <https://github.com/keylase/nvidia-patch/>`__
+              or `nvlax <https://github.com/illnyang/nvlax/>`__.
    wlr        Capture for wlroots based Wayland compositors via DMA-BUF.
    kms        DRM/KMS screen capture from the kernel. This requires that sunshine has cap_sys_admin capability.
-              See :ref:`Linux Setup <about/usage:setup>`.
+              See :ref:`Linux Setup <about/usage:linux>`.
    x11        Uses XCB. This is the slowest and most CPU intensive so should be avoided if possible.
    =========  ===========
-   
+
 **Default**
    Automatic. Sunshine will use the first capture method available in the order of the table above.
 
@@ -912,7 +905,7 @@ capture
    .. code-block:: text
 
       capture = kms
-      
+
 encoder
 ^^^^^^^
 
@@ -949,7 +942,7 @@ sw_preset
 
    .. Note:: This option only applies when using software `encoder`_.
 
-   .. Note:: From `FFmpeg <https://trac.ffmpeg.org/wiki/Encode/H.264#preset>`_.
+   .. Note:: From `FFmpeg <https://trac.ffmpeg.org/wiki/Encode/H.264#preset>`__.
 
          A preset is a collection of options that will provide a certain encoding speed to compression ratio. A slower
          preset will provide better compression (compression is quality per filesize). This means that, for example, if
@@ -993,7 +986,7 @@ sw_tune
 
    .. Note:: This option only applies when using software `encoder`_.
 
-   .. Note:: From `FFmpeg <https://trac.ffmpeg.org/wiki/Encode/H.264#preset>`_.
+   .. Note:: From `FFmpeg <https://trac.ffmpeg.org/wiki/Encode/H.264#preset>`__.
 
          You can optionally use -tune to change settings based upon the specifics of your input.
 
@@ -1021,14 +1014,15 @@ sw_tune
 
       sw_tune    = zerolatency
 
-nv_preset
-^^^^^^^^^
+nvenc_preset
+^^^^^^^^^^^^
 
 **Description**
-   The encoder preset to use.
+   NVENC encoder performance preset.
+   Higher numbers improve compression (quality at given bitrate) at the cost of increased encoding latency.
+   Recommended to change only when limited by network or decoder, otherwise similar effect can be accomplished by increasing bitrate.
 
-   .. Note:: This option only applies when using nvenc `encoder`_. For more information on the presets, see
-      `nvenc preset migration guide <https://docs.nvidia.com/video-technologies/video-codec-sdk/nvenc-preset-migration-guide/>`_.
+   .. Note:: This option only applies when using NVENC `encoder`_.
 
 **Choices**
 
@@ -1038,30 +1032,65 @@ nv_preset
    ========== ===========
    Value      Description
    ========== ===========
-   p1         fastest (lowest quality)
-   p2         faster (lower quality)
-   p3         fast (low quality)
-   p4         medium (default)
-   p5         slow (good quality)
-   p6         slower (better quality)
-   p7         slowest (best quality)
+   1          P1 (fastest)
+   2          P2
+   3          P3
+   4          P4
+   5          P5
+   6          P6
+   7          P7 (slowest)
    ========== ===========
 
 **Default**
-   ``p4``
+   ``1``
 
 **Example**
    .. code-block:: text
 
-      nv_preset = p4
+      nvenc_preset = 1
 
-nv_tune
-^^^^^^^
+nvenc_twopass
+^^^^^^^^^^^^^
 
 **Description**
-   The encoder tuning profile.
+   Enable two-pass mode in NVENC encoder.
+   This allows to detect more motion vectors, better distribute bitrate across the frame and more strictly adhere to bitrate limits.
+   Disabling it is not recommended since this can lead to occasional bitrate overshoot and subsequent packet loss.
 
-   .. Note:: This option only applies when using nvenc `encoder`_.
+   .. Note:: This option only applies when using NVENC `encoder`_.
+
+**Choices**
+
+.. table::
+   :widths: auto
+
+   =========== ===========
+   Value       Description
+   =========== ===========
+   disabled    One pass (fastest)
+   quarter_res Two passes, first pass at quarter resolution (faster)
+   full_res    Two passes, first pass at full resolution (slower)
+   =========== ===========
+
+**Default**
+   ``quarter_res``
+
+**Example**
+   .. code-block:: text
+
+      nvenc_twopass = quarter_res
+
+nvenc_realtime_hags
+^^^^^^^^^^^^^^^^^^^
+
+**Description**
+   Use realtime gpu scheduling priority in NVENC when hardware accelerated gpu scheduling (HAGS) is enabled in Windows.
+   Currently NVIDIA drivers may freeze in encoder when HAGS is enabled, realtime priority is used and VRAM utilization is close to maximum.
+   Disabling this option lowers the priority to high, sidestepping the freeze at the cost of reduced capture performance when the GPU is heavily loaded.
+
+   .. Note:: This option only applies when using NVENC `encoder`_.
+
+   .. Caution:: Applies to Windows only.
 
 **Choices**
 
@@ -1071,27 +1100,26 @@ nv_tune
    ========== ===========
    Value      Description
    ========== ===========
-   hq         high quality
-   ll         low latency
-   ull        ultra low latency
-   lossless   lossless
+   disabled   Use high priority
+   enabled    Use realtime priority
    ========== ===========
 
 **Default**
-   ``ull``
+   ``enabled``
 
 **Example**
    .. code-block:: text
 
-      nv_tune = ull
+      nvenc_realtime_hags = enabled
 
-nv_rc
-^^^^^
+nvenc_h264_cavlc
+^^^^^^^^^^^^^^^^
 
 **Description**
-   The encoder rate control.
+   Prefer CAVLC entropy coding over CABAC in H.264 when using NVENC.
+   CAVLC is outdated and needs around 10% more bitrate for same quality, but provides slightly faster decoding when using software decoder.
 
-   .. Note:: This option only applies when using nvenc `encoder`_.
+   .. Note:: This option only applies when using H.264 format with NVENC `encoder`_.
 
 **Choices**
 
@@ -1101,47 +1129,17 @@ nv_rc
    ========== ===========
    Value      Description
    ========== ===========
-   constqp    constant QP mode
-   vbr        variable bitrate
-   cbr        constant bitrate
+   disabled   Prefer CABAC
+   enabled    Prefer CAVLC
    ========== ===========
 
 **Default**
-   ``cbr``
+   ``disabled``
 
 **Example**
    .. code-block:: text
 
-      nv_rc = cbr
-
-nv_coder
-^^^^^^^^
-
-**Description**
-   The entropy encoding to use.
-
-   .. Note:: This option only applies when using H264 with nvenc `encoder`_.
-
-**Choices**
-
-.. table::
-   :widths: auto
-
-   ========== ===========
-   Value      Description
-   ========== ===========
-   auto       let ffmpeg decide
-   cabac      context adaptive binary arithmetic coding - higher quality
-   cavlc      context adaptive variable-length coding - faster decode
-   ========== ===========
-
-**Default**
-   ``auto``
-
-**Example**
-   .. code-block:: text
-
-      nv_coder = auto
+      nvenc_h264_cavlc = disabled
 
 qsv_preset
 ^^^^^^^^^^

@@ -81,23 +81,71 @@ namespace platf::dxgi {
   public:
     gpu_cursor_t():
         cursor_view { 0, 0, 0, 0, 0.0f, 1.0f } {};
-    void
-    set_pos(LONG rel_x, LONG rel_y, bool visible) {
-      cursor_view.TopLeftX = rel_x;
-      cursor_view.TopLeftY = rel_y;
 
+    void
+    set_pos(LONG topleft_x, LONG topleft_y, LONG display_width, LONG display_height, DXGI_MODE_ROTATION display_rotation, bool visible) {
+      this->topleft_x = topleft_x;
+      this->topleft_y = topleft_y;
+      this->display_width = display_width;
+      this->display_height = display_height;
+      this->display_rotation = display_rotation;
       this->visible = visible;
+      update_viewport();
     }
 
     void
-    set_texture(LONG width, LONG height, texture2d_t &&texture) {
-      cursor_view.Width = width;
-      cursor_view.Height = height;
-
+    set_texture(LONG texture_width, LONG texture_height, texture2d_t &&texture) {
       this->texture = std::move(texture);
+      this->texture_width = texture_width;
+      this->texture_height = texture_height;
+      update_viewport();
+    }
+
+    void
+    update_viewport() {
+      switch (display_rotation) {
+        case DXGI_MODE_ROTATION_UNSPECIFIED:
+        case DXGI_MODE_ROTATION_IDENTITY:
+          cursor_view.TopLeftX = topleft_x;
+          cursor_view.TopLeftY = topleft_y;
+          cursor_view.Width = texture_width;
+          cursor_view.Height = texture_height;
+          break;
+
+        case DXGI_MODE_ROTATION_ROTATE90:
+          cursor_view.TopLeftX = topleft_y;
+          cursor_view.TopLeftY = display_width - texture_width - topleft_x;
+          cursor_view.Width = texture_height;
+          cursor_view.Height = texture_width;
+          break;
+
+        case DXGI_MODE_ROTATION_ROTATE180:
+          cursor_view.TopLeftX = display_width - texture_width - topleft_x;
+          cursor_view.TopLeftY = display_height - texture_height - topleft_y;
+          cursor_view.Width = texture_width;
+          cursor_view.Height = texture_height;
+          break;
+
+        case DXGI_MODE_ROTATION_ROTATE270:
+          cursor_view.TopLeftX = display_height - texture_height - topleft_y;
+          cursor_view.TopLeftY = topleft_x;
+          cursor_view.Width = texture_height;
+          cursor_view.Height = texture_width;
+          break;
+      }
     }
 
     texture2d_t texture;
+    LONG texture_width;
+    LONG texture_height;
+
+    LONG topleft_x;
+    LONG topleft_y;
+
+    LONG display_width;
+    LONG display_height;
+    DXGI_MODE_ROTATION display_rotation;
+
     shader_res_t input_res;
 
     D3D11_VIEWPORT cursor_view;
@@ -141,6 +189,10 @@ namespace platf::dxgi {
     DXGI_RATIONAL display_refresh_rate;
     int display_refresh_rate_rounded;
 
+    DXGI_MODE_ROTATION display_rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
+    int width_before_rotation;
+    int height_before_rotation;
+
     int client_frame_rate;
 
     DXGI_FORMAT capture_format;
@@ -157,7 +209,44 @@ namespace platf::dxgi {
       D3DKMT_SCHEDULINGPRIORITYCLASS_REALTIME
     } D3DKMT_SCHEDULINGPRIORITYCLASS;
 
-    typedef NTSTATUS WINAPI (*PD3DKMTSetProcessSchedulingPriorityClass)(HANDLE, D3DKMT_SCHEDULINGPRIORITYCLASS);
+    typedef UINT D3DKMT_HANDLE;
+
+    typedef struct _D3DKMT_OPENADAPTERFROMLUID {
+      LUID AdapterLuid;
+      D3DKMT_HANDLE hAdapter;
+    } D3DKMT_OPENADAPTERFROMLUID;
+
+    typedef struct _D3DKMT_WDDM_2_7_CAPS {
+      union {
+        struct
+        {
+          UINT HwSchSupported : 1;
+          UINT HwSchEnabled : 1;
+          UINT HwSchEnabledByDefault : 1;
+          UINT IndependentVidPnVSyncControl : 1;
+          UINT Reserved : 28;
+        };
+        UINT Value;
+      };
+    } D3DKMT_WDDM_2_7_CAPS;
+
+    typedef struct _D3DKMT_QUERYADAPTERINFO {
+      D3DKMT_HANDLE hAdapter;
+      UINT Type;
+      VOID *pPrivateDriverData;
+      UINT PrivateDriverDataSize;
+    } D3DKMT_QUERYADAPTERINFO;
+
+    const UINT KMTQAITYPE_WDDM_2_7_CAPS = 70;
+
+    typedef struct _D3DKMT_CLOSEADAPTER {
+      D3DKMT_HANDLE hAdapter;
+    } D3DKMT_CLOSEADAPTER;
+
+    typedef NTSTATUS(WINAPI *PD3DKMTSetProcessSchedulingPriorityClass)(HANDLE, D3DKMT_SCHEDULINGPRIORITYCLASS);
+    typedef NTSTATUS(WINAPI *PD3DKMTOpenAdapterFromLuid)(D3DKMT_OPENADAPTERFROMLUID *);
+    typedef NTSTATUS(WINAPI *PD3DKMTQueryAdapterInfo)(D3DKMT_QUERYADAPTERINFO *);
+    typedef NTSTATUS(WINAPI *PD3DKMTCloseAdapter)(D3DKMT_CLOSEADAPTER *);
 
     virtual bool
     is_hdr() override;
@@ -240,8 +329,8 @@ namespace platf::dxgi {
     blend_t blend_invert;
     blend_t blend_disable;
 
-    ps_t scene_ps;
-    vs_t scene_vs;
+    ps_t cursor_ps;
+    vs_t cursor_vs;
 
     gpu_cursor_t cursor_alpha;
     gpu_cursor_t cursor_xor;

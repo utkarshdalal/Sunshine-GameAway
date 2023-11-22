@@ -94,6 +94,8 @@ namespace video {
   vaapi_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
   util::Either<avcodec_buffer_t, int>
   cuda_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
+  util::Either<avcodec_buffer_t, int>
+  vt_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
 
   class avcodec_software_encode_device_t: public platf::avcodec_encode_device_t {
   public:
@@ -350,7 +352,7 @@ namespace video {
       option_t(const option_t &) = default;
 
       std::string name;
-      std::variant<int, int *, std::optional<int> *, std::string, std::string *> value;
+      std::variant<int, int *, std::optional<int> *, std::function<int()>, std::string, std::string *> value;
 
       option_t(std::string &&name, decltype(value) &&value):
           name { std::move(name) }, value { std::move(value) } {}
@@ -435,7 +437,7 @@ namespace video {
       if (device && device->frame) {
         auto &frame = device->frame;
         frame->pict_type = AV_PICTURE_TYPE_I;
-        frame->key_frame = 1;
+        frame->flags |= AV_FRAME_FLAG_KEY;
       }
     }
 
@@ -444,7 +446,7 @@ namespace video {
       if (device && device->frame) {
         auto &frame = device->frame;
         frame->pict_type = AV_PICTURE_TYPE_NONE;
-        frame->key_frame = 0;
+        frame->flags &= ~AV_FRAME_FLAG_KEY;
       }
     }
 
@@ -601,7 +603,7 @@ namespace video {
     },
     PARALLEL_ENCODING | REF_FRAMES_INVALIDATION  // flags
   };
-#else
+#elif !defined(__APPLE__)
   static encoder_t nvenc {
     "nvenc"sv,
     std::make_unique<encoder_platform_formats_avcodec>(
@@ -625,9 +627,10 @@ namespace video {
         { "delay"s, 0 },
         { "forced-idr"s, 1 },
         { "zerolatency"s, 1 },
-        { "preset"s, &config::video.nv.nv_preset },
-        { "tune"s, &config::video.nv.nv_tune },
-        { "rc"s, &config::video.nv.nv_rc },
+        { "preset"s, &config::video.nv_legacy.preset },
+        { "tune"s, NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },
+        { "rc"s, NV_ENC_PARAMS_RC_CBR },
+        { "multipass"s, &config::video.nv_legacy.multipass },
       },
       // SDR-specific options
       {},
@@ -642,9 +645,10 @@ namespace video {
         { "delay"s, 0 },
         { "forced-idr"s, 1 },
         { "zerolatency"s, 1 },
-        { "preset"s, &config::video.nv.nv_preset },
-        { "tune"s, &config::video.nv.nv_tune },
-        { "rc"s, &config::video.nv.nv_rc },
+        { "preset"s, &config::video.nv_legacy.preset },
+        { "tune"s, NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },
+        { "rc"s, NV_ENC_PARAMS_RC_CBR },
+        { "multipass"s, &config::video.nv_legacy.multipass },
       },
       // SDR-specific options
       {
@@ -662,10 +666,11 @@ namespace video {
         { "delay"s, 0 },
         { "forced-idr"s, 1 },
         { "zerolatency"s, 1 },
-        { "preset"s, &config::video.nv.nv_preset },
-        { "tune"s, &config::video.nv.nv_tune },
-        { "rc"s, &config::video.nv.nv_rc },
-        { "coder"s, &config::video.nv.nv_coder },
+        { "preset"s, &config::video.nv_legacy.preset },
+        { "tune"s, NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },
+        { "rc"s, NV_ENC_PARAMS_RC_CBR },
+        { "coder"s, &config::video.nv_legacy.h264_coder },
+        { "multipass"s, &config::video.nv_legacy.multipass },
       },
       // SDR-specific options
       {
@@ -761,8 +766,8 @@ namespace video {
       // Common options
       {
         { "filler_data"s, false },
-        { "log_to_dbg"s, config::sunshine.min_log_level < 2 ? 1 : 0 },
-        { "preanalysis"s, &config::video.amd.amd_preanalysis },
+        { "log_to_dbg"s, []() { return config::sunshine.min_log_level < 2 ? 1 : 0; } },
+        { "preencode"s, &config::video.amd.amd_preanalysis },
         { "quality"s, &config::video.amd.amd_quality_av1 },
         { "rc"s, &config::video.amd.amd_rc_av1 },
         { "usage"s, &config::video.amd.amd_usage_av1 },
@@ -776,10 +781,10 @@ namespace video {
       // Common options
       {
         { "filler_data"s, false },
-        { "log_to_dbg"s, config::sunshine.min_log_level < 2 ? 1 : 0 },
+        { "log_to_dbg"s, []() { return config::sunshine.min_log_level < 2 ? 1 : 0; } },
         { "gops_per_idr"s, 1 },
         { "header_insertion_mode"s, "idr"s },
-        { "preanalysis"s, &config::video.amd.amd_preanalysis },
+        { "preencode"s, &config::video.amd.amd_preanalysis },
         { "qmax"s, 51 },
         { "qmin"s, 0 },
         { "quality"s, &config::video.amd.amd_quality_hevc },
@@ -796,8 +801,8 @@ namespace video {
       // Common options
       {
         { "filler_data"s, false },
-        { "log_to_dbg"s, config::sunshine.min_log_level < 2 ? 1 : 0 },
-        { "preanalysis"s, &config::video.amd.amd_preanalysis },
+        { "log_to_dbg"s, []() { return config::sunshine.min_log_level < 2 ? 1 : 0; } },
+        { "preencode"s, &config::video.amd.amd_preanalysis },
         { "qmax"s, 51 },
         { "qmin"s, 0 },
         { "quality"s, &config::video.amd.amd_quality_h264 },
@@ -924,16 +929,17 @@ namespace video {
   static encoder_t videotoolbox {
     "videotoolbox"sv,
     std::make_unique<encoder_platform_formats_avcodec>(
-      AV_HWDEVICE_TYPE_NONE, AV_HWDEVICE_TYPE_NONE,
+      AV_HWDEVICE_TYPE_VIDEOTOOLBOX, AV_HWDEVICE_TYPE_NONE,
       AV_PIX_FMT_VIDEOTOOLBOX,
-      AV_PIX_FMT_NV12, AV_PIX_FMT_NV12,
-      nullptr),
+      AV_PIX_FMT_NV12, AV_PIX_FMT_P010,
+      vt_init_avcodec_hardware_input_buffer),
     {
       // Common options
       {
         { "allow_sw"s, &config::video.vt.vt_allow_sw },
         { "require_sw"s, &config::video.vt.vt_require_sw },
         { "realtime"s, &config::video.vt.vt_realtime },
+        { "prio_speed"s, 1 },
       },
       {},  // SDR-specific options
       {},  // HDR-specific options
@@ -946,6 +952,7 @@ namespace video {
         { "allow_sw"s, &config::video.vt.vt_allow_sw },
         { "require_sw"s, &config::video.vt.vt_require_sw },
         { "realtime"s, &config::video.vt.vt_realtime },
+        { "prio_speed"s, 1 },
       },
       {},  // SDR-specific options
       {},  // HDR-specific options
@@ -958,6 +965,7 @@ namespace video {
         { "allow_sw"s, &config::video.vt.vt_allow_sw },
         { "require_sw"s, &config::video.vt.vt_require_sw },
         { "realtime"s, &config::video.vt.vt_realtime },
+        { "prio_speed"s, 1 },
       },
       {},  // SDR-specific options
       {},  // HDR-specific options
@@ -1292,7 +1300,7 @@ namespace video {
         return ret;
       }
 
-      if (frame->key_frame && !(av_packet->flags & AV_PKT_FLAG_KEY)) {
+      if ((frame->flags & AV_FRAME_FLAG_KEY) && !(av_packet->flags & AV_PKT_FLAG_KEY)) {
         BOOST_LOG(error) << "Encoder did not produce IDR frame when requested!"sv;
       }
 
@@ -1529,6 +1537,7 @@ namespace video {
           [&](int v) { av_dict_set_int(&options, option.name.c_str(), v, 0); },
           [&](int *v) { av_dict_set_int(&options, option.name.c_str(), *v, 0); },
           [&](std::optional<int> *v) { if(*v) av_dict_set_int(&options, option.name.c_str(), **v, 0); },
+          [&](std::function<int()> v) { av_dict_set_int(&options, option.name.c_str(), v(), 0); },
           [&](const std::string &v) { av_dict_set(&options, option.name.c_str(), v.c_str(), 0); },
           [&](std::string *v) { if(!v->empty()) av_dict_set(&options, option.name.c_str(), v->c_str(), 0); } },
         option.value);
@@ -1594,6 +1603,11 @@ namespace video {
     frame->format = ctx->pix_fmt;
     frame->width = ctx->width;
     frame->height = ctx->height;
+    frame->color_range = ctx->color_range;
+    frame->color_primaries = ctx->color_primaries;
+    frame->color_trc = ctx->color_trc;
+    frame->colorspace = ctx->colorspace;
+    frame->chroma_location = ctx->chroma_sample_location;
 
     // Attach HDR metadata to the AVFrame
     if (colorspace_is_hdr(colorspace)) {
@@ -1865,6 +1879,12 @@ namespace video {
 
     auto session = make_encode_session(disp, encoder, ctx.config, img.width, img.height, std::move(encode_device));
     if (!session) {
+      return std::nullopt;
+    }
+
+    // Load the initial image to prepare for encoding
+    if (session->convert(img)) {
+      BOOST_LOG(error) << "Could not convert initial image"sv;
       return std::nullopt;
     }
 
@@ -2616,6 +2636,20 @@ namespace video {
     return hw_device_buf;
   }
 
+  util::Either<avcodec_buffer_t, int>
+  vt_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *encode_device) {
+    avcodec_buffer_t hw_device_buf;
+
+    auto status = av_hwdevice_ctx_create(&hw_device_buf, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0);
+    if (status < 0) {
+      char string[AV_ERROR_MAX_STRING_SIZE];
+      BOOST_LOG(error) << "Failed to create a VideoToolbox device: "sv << av_make_error_string(string, AV_ERROR_MAX_STRING_SIZE, status);
+      return -1;
+    }
+
+    return hw_device_buf;
+  }
+
 #ifdef _WIN32
 }
 
@@ -2694,6 +2728,8 @@ namespace video {
         return platf::mem_type_e::cuda;
       case AV_HWDEVICE_TYPE_NONE:
         return platf::mem_type_e::system;
+      case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
+        return platf::mem_type_e::videotoolbox;
       default:
         return platf::mem_type_e::unknown;
     }

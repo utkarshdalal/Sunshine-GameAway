@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "nvenc/nvenc_config.h"
+
 namespace config {
   struct video_t {
     // ffmpeg params
@@ -26,12 +28,14 @@ namespace config {
       std::optional<int> svtav1_preset;
     } sw;
 
+    nvenc::nvenc_config nv;
+    bool nv_realtime_hags;
+
     struct {
-      std::optional<int> nv_preset;
-      std::optional<int> nv_tune;
-      std::optional<int> nv_rc;
-      int nv_coder;
-    } nv;
+      int preset;
+      int multipass;
+      int h264_coder;
+    } nv_legacy;
 
     struct {
       std::optional<int> qsv_preset;
@@ -86,7 +90,6 @@ namespace config {
   struct nvhttp_t {
     // Could be any of the following values:
     // pc|lan|wan
-    std::string origin_pin_allowed;
     std::string origin_web_ui_allowed;
 
     std::string pkey;  // must be 2048 bits
@@ -110,6 +113,7 @@ namespace config {
     std::chrono::duration<double> key_repeat_period;
 
     std::string gamepad;
+    bool ds4_back_as_touchpad_click;
 
     bool keyboard;
     bool mouse;
