@@ -130,14 +130,14 @@ namespace platf::publish {
 
     if (enable) {
       status = _DnsServiceRegister(&req, nullptr);
-      if (status != MY_DNS_REQUEST_PENDING) {
+      if (status != DNS_REQUEST_PENDING) {
         print_status("DnsServiceRegister()"sv, status);
         return -1;
       }
     }
     else {
       status = _DnsServiceDeRegister(&req, nullptr);
-      if (status != MY_DNS_REQUEST_PENDING) {
+      if (status != DNS_REQUEST_PENDING) {
         print_status("DnsServiceDeRegister()"sv, status);
         return -1;
       }
