@@ -86,7 +86,7 @@ jobs:
           if [[ $GITHUB_EVENT_NAME == "push" ]]; then
             RELEASE=true
           else
-            RELEASE=false
+            RELEASE=true
           fi
 
           # set the release tag
