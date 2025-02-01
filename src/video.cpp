@@ -1687,6 +1687,7 @@ namespace video {
       }
 
       auto bitrate = ((config::nvhttp.max_bitrate != 0) ? std::min(config.bitrate, config::nvhttp.max_bitrate) : config.bitrate) * 1000;
+      BOOST_LOG(info) << "Max bitrate is " << lconfig::nvhttp.max_bitrate;
       ctx->rc_max_rate = bitrate;
       ctx->bit_rate = bitrate;
 
