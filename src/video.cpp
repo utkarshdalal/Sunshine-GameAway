@@ -1686,12 +1686,7 @@ namespace video {
         }
       }
 
-<<<<<<< HEAD
-    if (video_format[encoder_t::CBR]) {
       auto bitrate = ((config::nvhttp.max_bitrate != 0) ? std::min(config.bitrate, config::nvhttp.max_bitrate) : config.bitrate) * 1000;
-=======
-      auto bitrate = config.bitrate * 1000;
->>>>>>> upstream/master
       ctx->rc_max_rate = bitrate;
       ctx->bit_rate = bitrate;
 
